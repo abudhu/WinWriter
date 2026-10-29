@@ -9,7 +9,8 @@ on:
         type: string
 
 permissions:
-  contents: read
+  # GitHub exposes draft releases only to callers with repository push access.
+  contents: write
 
 jobs:
   native:
@@ -26,6 +27,8 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Confirm native host
         env:
           EXPECTED_ARCH: ${{ matrix.arch }}
