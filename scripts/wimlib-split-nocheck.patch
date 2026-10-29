@@ -1,0 +1,56 @@
+Win11 USB Creator modification, 2026-10-28.
+Expose libwim's existing NO_CHECK_INTEGRITY write flag for split, avoiding
+inherited integrity-table generation when the user selects fast writing.
+This wimlib-imagex modification is GPL-3.0-or-later, like the upstream CLI.
+
+--- a/programs/imagex.c
++++ b/programs/imagex.c
+@@ -3,6 +3,8 @@
+  *
+  * Use wimlib to create, modify, extract, mount, unmount, or display information
+  * about a WIM file
++ *
++ * Modified for Win11 USB Creator on 2026-10-28: add split --nocheck.
+  */
+ 
+ /*
+@@ -397,7 +399,9 @@
+ 
+ static const struct option split_options[] = {
+ 	{T("check"), no_argument, NULL, IMAGEX_CHECK_OPTION},
++	{T("nocheck"), no_argument, NULL, IMAGEX_NOCHECK_OPTION},
++	{T("no-check"), no_argument, NULL, IMAGEX_NOCHECK_OPTION},
+ 	{T("include-integrity"), no_argument, NULL, IMAGEX_INCLUDE_INTEGRITY_OPTION},
+ 	{NULL, 0, NULL, 0},
+ };
+ 
+@@ -3884,6 +3888,9 @@
+ 		case IMAGEX_INCLUDE_INTEGRITY_OPTION:
+ 			write_flags |= WIMLIB_WRITE_FLAG_CHECK_INTEGRITY;
+ 			break;
++		case IMAGEX_NOCHECK_OPTION:
++			write_flags |= WIMLIB_WRITE_FLAG_NO_CHECK_INTEGRITY;
++			break;
+ 		default:
+ 			goto out_usage;
+ 		}
+@@ -4443,5 +4450,5 @@
+ [CMD_SPLIT] =
+ T(
+-"    %"TS" WIMFILE SPLIT_WIM_PART_1 PART_SIZE_MB [--check]\n"
++"    %"TS" WIMFILE SPLIT_WIM_PART_1 PART_SIZE_MB [--check | --nocheck]\n"
+ ),
+ #if WIM_MOUNTING_SUPPORTED
+--- a/doc/man1/wimsplit.1
++++ b/doc/man1/wimsplit.1
+@@ -16,6 +16,10 @@
+ Before splitting the WIM, verify its integrity if it contains extra integrity
+ information.  Also include extra integrity information in each split WIM part,
+ even if \fIWIMFILE\fR did not contain it.
++.TP
++\fB--nocheck\fR
++Do not include extra integrity information in the split WIM parts, even if
++\fIWIMFILE\fR contains it.  Added for Win11 USB Creator on October 28, 2026.
+ .TP
+ \fB--include-integrity\fR
+ Include extra integrity information in each split WIM part, i.e. like

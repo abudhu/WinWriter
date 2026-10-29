@@ -1,0 +1,6 @@
+.build/
+.cache/
+.swiftpm/
+dist/
+.DS_Store
+Resources/wimlib-imagex

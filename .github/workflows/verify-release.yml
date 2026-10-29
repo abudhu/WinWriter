@@ -1,0 +1,60 @@
+name: Verify release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to verify (drafts supported)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  native:
+    name: Native ${{ matrix.arch }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15-intel
+            arch: x86_64
+          - runner: macos-15
+            arch: arm64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Confirm native host
+        env:
+          EXPECTED_ARCH: ${{ matrix.arch }}
+        run: |
+          test "$(uname -m)" = "$EXPECTED_ARCH"
+          sw_vers
+      - name: Download exact release artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          gh release download "$RELEASE_TAG" --dir "$RUNNER_TEMP/release" \
+            --pattern Win11-USB-Creator.zip \
+            --pattern 'wimlib-*-corresponding-source.tar.gz' \
+            --pattern SHA256SUMS
+      - name: Verify downloaded archive and signature
+        run: |
+          cd "$RUNNER_TEMP/release"
+          shasum -a 256 -c SHA256SUMS
+          ditto -x -k Win11-USB-Creator.zip extracted
+          app="$RUNNER_TEMP/release/extracted/Win11 USB Creator.app"
+          codesign --verify --deep --strict --verbose=2 "$app"
+          cmp "$GITHUB_WORKSPACE/LICENSE" "$app/Contents/Resources/Licenses/WinWriter-LICENSE.txt"
+          xcrun lipo "$app/Contents/MacOS/WinWriter" -verify_arch x86_64 arm64
+          xcrun lipo "$app/Contents/Resources/wimlib-imagex" -verify_arch x86_64 arm64
+      - name: Launch app and exercise bundled WIM tool
+        env:
+          EXPECTED_ARCH: ${{ matrix.arch }}
+        run: |
+          xcrun swift scripts/smoke-release.swift \
+            "$RUNNER_TEMP/release/extracted/Win11 USB Creator.app" "$EXPECTED_ARCH"

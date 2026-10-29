@@ -1,0 +1,73 @@
+wimlib 1.14.5 — corresponding source for Win11 USB Creator
+
+CONTENTS
+
+.cache/wimlib-1.14.5.tar.gz is the unmodified upstream source release, including
+all source files, licenses, documentation and the pre-generated configure
+script. scripts/wimlib-split-nocheck.patch adds split --nocheck, using libwim's
+existing flag to omit output integrity tables even when the source has one.
+The upstream archive itself is unchanged. scripts/common.sh and
+scripts/build-wimlib.sh are the actual scripts used to build the patched
+universal executable. Licenses/ preserves the full upstream license texts and
+individual component notices, including the modification notice.
+
+Source URL: https://wimlib.net/downloads/wimlib-1.14.5.tar.gz
+SHA-256: 84221a3abd5b91228f15f8e6065c335a336237b5738197b75bf419eea561a194
+The upstream download listing reports approximately 1074 KB compressed.
+
+REBUILD THE SAME CLI
+
+On macOS, install Apple's Xcode Command Line Tools (xcode-select --install)
+and pkg-config (for example, brew install pkg-config), then run:
+
+    /bin/bash scripts/build-wimlib.sh
+
+The included archive is used offline and verified before extraction. The
+included patch is applied to the freshly extracted source before configuring
+either architecture; an incompatible or missing patch fails the build.
+pkg-config must be on PATH, or set PKG_CONFIG to its absolute executable path.
+No Autotools bootstrap, third-party library installation, Rosetta, signing
+identity, or administrator access is needed. Output:
+
+    Resources/wimlib-imagex
+
+The script builds arm64 and x86_64 with the selected macOS SDK, a macOS 12.0
+minimum deployment target, and -Oz. It configures --disable-shared,
+--enable-static, --without-ntfs-3g, --without-fuse, and --disable-test-support,
+then combines and strips the executables. libwim is statically linked into
+the CLI; only macOS system libraries are dynamically linked. No helper build
+is linked into the Swift application. The final executable can be signed with
+your own identity or ad-hoc; the application packaging script signs its copy.
+Compiler/SDK and signature changes can change the final executable bytes.
+
+TO MODIFY WIMLIB
+
+Unpack .cache/wimlib-1.14.5.tar.gz into a working directory, then apply the
+included patch with patch -p1 -i /absolute/path/to/scripts/wimlib-split-nocheck.patch
+from the extracted wimlib source directory before making further changes.
+Follow the included upstream README/build instructions or the exact compiler
+and configure invocations in scripts/build-wimlib.sh. That script deliberately
+re-extracts the pinned archive and applies the patch on every run; it will
+discard edits made inside its generated .build directory. Preserve additional
+changes in a reproducible patch and update the build script accordingly.
+When redistributing a modified CLI, distribute your actual modified
+corresponding source (including all applied patches) and build instructions,
+and update the version/checksum/notices as appropriate. Do not claim an
+unchanged pin for a modified archive.
+
+The app imposes no license key or helper signature identity check. To use a
+modified helper, replace Contents/Resources/wimlib-imagex in your own copy of
+the app, sign that helper, then re-sign the outer app with your own identity
+(or codesign --force --sign - --options runtime for local use). Altering a
+bundle invalidates its existing signature and notarization. The original
+publisher's private signing key is neither needed nor provided.
+
+LICENSE
+
+wimlib-imagex is GPL-3.0-or-later and is supplied WITHOUT ANY WARRANTY.
+See Licenses/COPYING and Licenses/COPYING.GPLv3. libwim also offers an LGPL
+option as described in Licenses/COPYING, but the CLI is distributed under GPL.
+The packaging scripts are 0BSD; their full notice is in scripts/common.sh.
+Providing this archive alongside the matching binary preserves access to the
+corresponding source; downstream distributors must continue to comply with
+the applicable GPL terms.

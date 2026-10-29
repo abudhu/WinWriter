@@ -1,0 +1,24 @@
+Win11 USB Creator — Third-party software
+
+This app bundles wimlib-imagex 1.14.5, Copyright 2012-2026 Eric Biggers
+and other contributors. https://wimlib.net/
+
+wimlib-imagex is free software licensed under the GNU General Public License,
+version 3 or (at your option) any later version. It is provided WITHOUT ANY
+WARRANTY, including MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+See COPYING, COPYING.GPLv3, COPYING.LGPL, and wimlib-component-notices.txt
+in this directory for the upstream licensing terms and component notices.
+
+The Swift application invokes wimlib-imagex as a separate command-line process.
+It does not link to libwim. The CLI itself statically includes libwim and is
+built without libntfs-3g or FUSE. Only macOS system libraries are required.
+
+The matching wimlib-1.14.5-corresponding-source.tar.gz is distributed alongside
+Win11-USB-Creator.zip. It contains the original upstream source release,
+including its generated configure script, the scripts used to build the
+bundled executable, licensing notices, and rebuilding instructions. Anyone
+redistributing the app must also provide the corresponding source under the
+applicable GPL terms; an upstream download link alone is not a substitute.
+
+Upstream source: https://wimlib.net/downloads/wimlib-1.14.5.tar.gz
+SHA-256: 84221a3abd5b91228f15f8e6065c335a336237b5738197b75bf419eea561a194

@@ -1,0 +1,101 @@
+Win11 USB Creator — building and distribution
+
+BUILD THE APPLICATION
+
+Use macOS with Xcode Command Line Tools, Swift 5.9 or later, and pkg-config.
+Install Apple's tools with xcode-select --install if needed. pkg-config is a
+build-time dependency only (for example, brew install pkg-config); set
+PKG_CONFIG to its absolute executable path if it is not on PATH. No Autotools
+bootstrap is required. Recipients need neither Homebrew nor pkg-config.
+
+From the application source checkout, run:
+
+    /bin/bash scripts/build.sh
+
+The build downloads the pinned wimlib 1.14.5 source release over HTTPS only if
+.cache/wimlib-1.14.5.tar.gz is absent, and verifies its SHA-256 on every build.
+The original release includes configure; no bootstrap/autoreconf step is run.
+The build applies scripts/wimlib-split-nocheck.patch to expose wimlib's existing
+no-integrity write flag for fast splitting; the patch ships with the sources.
+The cache is reusable offline, but each build uses fresh wimlib object files.
+The macOS SDK and deployment target 12.0 are explicit for both architectures;
+arm64 and x86_64 are compiled separately and combined using lipo. Cross builds
+do not require Rosetta. C uses -Oz and Swift uses -Osize; both strip symbols
+and dead code. Runtime dependencies are restricted to Apple's system libraries.
+Signed outputs are not byte-for-byte reproducible: SDK/compiler versions,
+signing identity, timestamps, and notarization affect them.
+
+Set JOBS to a positive integer to limit wimlib compilation concurrency.
+
+SIGNING
+
+The script prefers a valid Developer ID Application identity, then a valid
+Apple Development identity, without exporting any keychain material. To select
+one explicitly, provide its full identity name or SHA-1:
+
+    SIGN_IDENTITY='Developer ID Application: Your Name (TEAMID)' /bin/bash scripts/build.sh
+
+The locally observed development identity can also be selected explicitly:
+
+    SIGN_IDENTITY=1D9B0714B905EBC0EC60DCFAEF2F31A8BB93CEA0 /bin/bash scripts/build.sh
+
+No usable identity is a build error by default. For deliberate LOCAL-ONLY
+ad-hoc signing, use:
+
+    ALLOW_ADHOC_SIGNING=1 SIGN_IDENTITY=- /bin/bash scripts/build.sh
+
+The helper is signed before the outer app. Both use hardened runtime, without
+a sandbox or entitlements. Signing needs access to the corresponding private
+key in your own keychain; keys are never copied to the app or source package.
+
+Apple Development and ad-hoc signatures do not provide public Gatekeeper
+trust. Developer ID alone does not provide notarization. For public release,
+first configure your own notarytool keychain profile using Apple's documented
+credential workflow, then run:
+
+    NOTARY_PROFILE='your-profile-name' /bin/bash scripts/build.sh
+
+This requires Developer ID Application signing. The script submits the zip,
+requires an Accepted result, staples the ticket to the app, and regenerates
+the distribution zip. It does not create, enumerate, or export credentials.
+Without NOTARY_PROFILE the app is signed but explicitly NOT notarized.
+
+OUTPUTS AND LICENSING
+
+    dist/Win11 USB Creator.app
+    dist/Win11-USB-Creator.zip
+    dist/wimlib-1.14.5-corresponding-source.tar.gz
+    dist/build-scripts/
+    dist/Licenses/
+    dist/BUILDING.txt
+    dist/SHA256SUMS
+
+The application license is the GNU Affero General Public License v3 in the
+repository's LICENSE file. The build includes it in the app's Licenses folder
+as WinWriter-LICENSE.txt. Publish the matching application source alongside
+the binary; GitHub releases provide source archives for the release tag.
+
+Publish the matching corresponding-source archive with the application zip
+and retain the notices/licenses. The archive contains the exact upstream
+release, its pre-generated build machinery, the fast-split CLI patch, and the
+scripts/instructions used to build the bundled GPL-3.0-or-later CLI. The app does not contain the source
+archive, only the helper and its license notices. Do not distribute the zip
+alone without arranging GPL-compliant corresponding-source availability.
+This is packaging guidance, not legal advice.
+
+The application uses only Swift/AppKit/system frameworks and runs wimlib-imagex
+as a separate process; it does not link the Swift program to libwim. The helper
+statically includes libwim, with --disable-shared --enable-static,
+--without-ntfs-3g and --without-fuse. 'Static' refers to libwim; macOS system
+libraries remain dynamically linked, as required by macOS.
+
+The source archive includes standalone CLI rebuilding instructions. Scripts
+beside the zip are a packaging snapshot; rebuilding the full app also requires
+the application's Sources/, Package.swift and Resources/ from the checkout.
+The packaging scripts use the permissive 0BSD notice in scripts/common.sh;
+this does not relicense wimlib or the application.
+
+Windows ISO files and Microsoft licenses are not provided. Runtime support is
+macOS 12+ on Intel and Apple Silicon. Creating Windows installation media on
+Apple Silicon does not make Windows bootable natively on Apple Silicon Macs.
+No physical disk is touched by the build, signing, or notarization commands.
